@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📦 Orders Manager</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #eef2f7; color: #1a2b4c; padding: 20px; min-height: 100vh;
+  }
+  header {
+    max-width: 1400px; margin: 0 auto 20px;
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 24px; font-weight: 700; }
+  .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .meta { font-size: 13px; color: #7a869a; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(46,204,113,.6); }
+    70%  { box-shadow: 0 0 0 10px rgba(46,204,113,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+  }
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: #4a7dff; color: #fff; }
+  .btn-primary:hover { background: #3565e0; }
+  .btn-ghost { background: #fff; color: #4a5568; border: 1px solid #dfe3e8; }
+  .btn-ghost:hover { background: #f7f9fc; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-success { background: #2ecc71; color: #fff; }
+  .btn-success:hover { background: #27ae60; }
+  .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+  .controls {
+    max-width: 1400px; margin: 0 auto 20px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .controls input, .controls select {
+    padding: 10px 14px; border: 1px solid #dfe3e8; border-radius: 8px;
+    font-size: 14px; background: #fff; outline: none; transition: border .2s;
+  }
+  .controls input:focus, .controls select:focus { border-color: #4a7dff; }
+  .controls input { flex: 1; min-width: 220px; }
+  .stats {
+    max-width: 1400px; margin: 0 auto 22px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;
+  }
+  .stat {
+    background: #fff; padding: 16px 18px; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .stat .label { font-size: 12px; color: #7a869a; text-transform: uppercase; letter-spacing: .5px; }
+  .stat .value { font-size: 22px; font-weight: 700; color: #1a2b4c; margin-top: 4px; }
+  .grid {
+    max-width: 1400px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px;
+  }
+  .card {
+    background: #fff; border-radius: 14px; padding: 18px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    border-left: 5px solid #f0ad4e;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.10); }
+  .card.status-pending   { border-left-color: #f0ad4e; }
+  .card.status-completed { border-left-color: #2ecc71; }
+  .card.status-cancelled { border-left-color: #e74c3c; }
+  .card.status-shipped   { border-left-color: #3498db; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
+  .order-id { font-size: 13px; font-weight: 700; color: #4a7dff; letter-spacing: .3px; word-break: break-all; }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  }
+  .badge.pending   { background: #fff3cd; color: #856404; }
+  .badge.completed { background: #d4f5dd; color: #1e7e34; }
+  .badge.cancelled { background: #fde2e2; color: #b02a37; }
+  .badge.shipped   { background: #d6eaff; color: #0b5ed7; }
+  .badge.other     { background: #e9ecef; color: #495057; }
+  .row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #4a5568; margin: 6px 0; line-height: 1.4; }
+  .row .icon { width: 16px; text-align: center; flex-shrink: 0; }
+  .row .value { word-break: break-word; }
+  .divider { height: 1px; background: #eef1f5; margin: 12px 0; }
+  .total-line { display: flex; justify-content: space-between; align-items: baseline; }
+  .total-line .label { font-size: 12px; color: #7a869a; text-transform: uppercase; letter-spacing: .5px; }
+  .total-line .amount { font-size: 20px; font-weight: 700; color: #1e7e34; }
+  .timestamp { font-size: 11px; color: #a0aec0; margin-top: 10px; text-align: right; }
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #eef1f5; }
+  .empty, .loading { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #7a869a; font-size: 15px; }
+  .spinner {
+    width: 34px; height: 34px; border: 3px solid #e2e8f0; border-top-color: #4a7dff;
+    border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15, 25, 45, 0.55);
+    backdrop-filter: blur(2px); display: none; align-items: center;
+    justify-content: center; z-index: 1000; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 640px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: slideUp .25s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid #eef1f5;
+    position: sticky; top: 0; background: #fff;
+    border-radius: 16px 16px 0 0; z-index: 1;
+  }
+  .modal-header h2 { font-size: 18px; font-weight: 700; }
+  .modal-close {
+    background: none; border: none; font-size: 24px; cursor: pointer;
+    color: #7a869a; line-height: 1; padding: 4px 8px; border-radius: 6px;
+  }
+  .modal-close:hover { background: #f4f6f9; color: #1a2b4c; }
+  .modal-body { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-field { display: flex; flex-direction: column; gap: 6px; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label { font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: .4px; }
+  .form-field input, .form-field select, .form-field textarea {
+    padding: 10px 12px; border: 1px solid #dfe3e8; border-radius: 8px;
+    font-size: 14px; font-family: inherit; outline: none; transition: border .2s; background: #fff;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: #4a7dff; }
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px;
+    border-top: 1px solid #eef1f5; position: sticky; bottom: 0; background: #fff;
+    border-radius: 0 0 16px 16px;
+  }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a2b4c; color: #fff; padding: 12px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    opacity: 0; transition: all .3s; z-index: 2000; pointer-events: none;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { background: #2ecc71; }
+  .toast.error { background: #e74c3c; }
+  @media (max-width: 520px) { .modal-body { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📦 Orders Manager</h1>
+  <div class="header-actions">
+    <div class="meta"><span class="dot"></span><span id="refreshed">Connecting…</span></div>
+    <button class="btn btn-primary" onclick="openAdd()">➕ New Order</button>
+  </div>
+</header>
+
+<div class="controls">
+  <input id="search" type="text" placeholder="🔍 Search order ID, customer, phone…">
+  <select id="statusFilter">
+    <option value="">All Statuses</option>
+    <option value="pending">Pending</option>
+    <option value="completed">Completed</option>
+    <option value="shipped">Shipped</option>
+    <option value="cancelled">Cancelled</option>
+  </select>
+  <select id="sortBy">
+    <option value="newest">Newest first</option>
+    <option value="oldest">Oldest first</option>
+    <option value="totalHigh">Total: High → Low</option>
+    <option value="totalLow">Total: Low → High</option>
+  </select>
+</div>
+
+<div class="stats" id="stats"></div>
+<div class="grid" id="grid"><div class="loading"><div class="spinner"></div>Loading orders…</div></div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Edit Order</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form id="orderForm" onsubmit="submitForm(event)">
+      <div class="modal-body" id="formBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">💾 Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   👉 YOUR APPS SCRIPT URL
+   ═══════════════════════════════════════════════════════════ */
+const API_URL = "https://script.google.com/macros/s/AKfycbwkmfOsWBp7hh345KvE0zzEQ7VZekQxdT7C-V4evvaqr_PqzcgyKzea49w3cgrLO5vO/exec";
+
+const REFRESH_MS = 30000;
+const TZ_OFFSET_HOURS = 2; // Tanzania (UTC+2)
+
+const FIELDS = [
+  { key: "orderId",      label: "Order ID",       type: "text",   full: false, readonlyNew: true },
+  { key: "timestamp",    label: "Timestamp",      type: "datetime-local", full: false },
+  { key: "customerName", label: "Customer Name",  type: "text",   full: false },
+  { key: "phone",        label: "Phone",          type: "tel",    full: false },
+  { key: "email",        label: "Email",          type: "email",  full: false },
+  { key: "productId",    label: "Product ID",     type: "text",   full: false },
+  { key: "productName",  label: "Product Name",   type: "text",   full: false },
+  { key: "quantity",     label: "Quantity",       type: "number", full: false },
+  { key: "total",        label: "Total",          type: "number", full: false },
+  { key: "address",      label: "Address",        type: "text",   full: true  },
+  { key: "status",       label: "Status",         type: "select", full: false,
+    options: ["Pending", "Shipped", "Completed", "Cancelled"] },
+];
+
+/* ─── Helpers ─── */
+function statusClass(s) {
+  const v = (s || "").toLowerCase().trim();
+  return ["pending", "completed", "cancelled", "shipped"].includes(v) ? v : "other";
+}
+function fmtMoney(n) {
+  const num = Number(String(n).replace(/[^0-9.-]/g, ""));
+  return isNaN(num) ? "—" : num.toLocaleString();
+}
+function esc(str) {
+  return String(str ?? "").replace(/[&<>"']/g, m =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+function fmtPhone(p) {
+  if (!p) return "—";
+  let d = String(p).replace(/\D/g, "");
+  if (d.startsWith("255")) d = d.slice(3);
+  if (!d.startsWith("0")) d = "0" + d;
+  return d;
+}
+
+/* ─── Parse timestamp from ANY format → Date (UTC) ─── */
+function toDateObj(ts) {
+  if (!ts) return null;
+  const s = String(ts).trim();
+
+  if (/Z$/.test(s) || /^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) return d;
+  }
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+  if (dmy) {
+    const [, D, M, Y, h, m, sec] = dmy;
+    return new Date(Date.UTC(+Y, +M - 1, +D, +h, +m, +(sec || 0)));
+  }
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):?(\d{2})?/);
+  if (iso) {
+    const [, Y, M, D, h, m, sec] = iso;
+    return new Date(Date.UTC(+Y, +M - 1, +D, +h, +m, +(sec || 0)));
+  }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
+function fmtTimestamp(ts) {
+  const d = toDateObj(ts);
+  if (!d) return String(ts || "");
+  const local = new Date(d.getTime() + TZ_OFFSET_HOURS * 60 * 60 * 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${p(local.getUTCDate())}/${p(local.getUTCMonth() + 1)}/${local.getUTCFullYear()} ` +
+         `${p(local.getUTCHours())}:${p(local.getUTCMinutes())}:${p(local.getUTCSeconds())}`;
+}
+
+function nowLocalInput() {
+  const d = new Date(Date.now() + TZ_OFFSET_HOURS * 60 * 60 * 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+function toLocalDT(ts) {
+  const d = toDateObj(ts);
+  if (!d) return nowLocalInput();
+  const local = new Date(d.getTime() + TZ_OFFSET_HOURS * 60 * 60 * 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${local.getUTCFullYear()}-${p(local.getUTCMonth() + 1)}-${p(local.getUTCDate())}T${p(local.getUTCHours())}:${p(local.getUTCMinutes())}`;
+}
+
+function toast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = "toast " + type, 3200);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   🔔 DESKTOP NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+let knownOrderIds = new Set();
+let firstLoadDone = false;
+
+// Ask permission on first click
+document.addEventListener("click", function askOnce() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(perm => {
+      if (perm === "granted") {
+        new Notification("✅ Notifications enabled", {
+          body: "You'll be alerted when new orders arrive.",
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>"
+        });
+      }
+    });
+  }
+}, { once: true });
+
+// Play a short beep (Web Audio — no file needed)
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {}
+}
+
+// Show desktop banner for a new order
+function showDesktopNotification(order) {
+  playBeep();
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    const n = new Notification("🔔 Kd, you got new orders!", {
+      body: `You should check them out.\n\n` +
+            `Order: ${order.orderId || "—"}\n` +
+            `Customer: ${order.customerName || "—"}\n` +
+            `Product: ${order.productName || "—"} × ${order.quantity || ""}\n` +
+            `Total: ${order.total || ""}`,
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>",
+      badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>",
+      tag: order.orderId,
+      requireInteraction: true
+    });
+
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+
+  toast(`🔔 New order: ${order.orderId}`, "success");
+}
+
+// Show desktop banner for multiple new orders at once
+function showMultiNotification(count) {
+  playBeep();
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    const n = new Notification(`🔔 Kd, you got ${count} new orders!`, {
+      body: "You should check them out.",
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>",
+      requireInteraction: true
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+
+  toast(`🔔 ${count} new orders arrived`, "success");
+}
+
+/* ─── State ─── */
+let ALL_ORDERS = [];
+let HEADERS = [];
+let editingId = null;
+let isNewMode = false;
+
+/* ─── Load ─── */
+async function loadOrders() {
+  try {
+    const res = await fetch(API_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const rows = await res.json();
+    if (!rows || rows.length < 2) { ALL_ORDERS = []; render(); return; }
+
+    HEADERS = rows[0].map(h => String(h).trim());
+    ALL_ORDERS = rows.slice(1)
+      .filter(r => r.some(c => String(c).trim() !== ""))
+      .map(r => {
+        const o = {};
+        HEADERS.forEach((h, i) => o[h] = String(r[i] ?? "").trim());
+        return o;
+      });
+
+    /* 🔔 Detect new orders */
+    const currentIds = new Set(ALL_ORDERS.map(o => o.orderId));
+
+    if (!firstLoadDone) {
+      knownOrderIds = currentIds;
+      firstLoadDone = true;
+    } else {
+      const newOrders = ALL_ORDERS.filter(o => !knownOrderIds.has(o.orderId));
+      if (newOrders.length === 1) showDesktopNotification(newOrders[0]);
+      else if (newOrders.length > 1) showMultiNotification(newOrders.length);
+      knownOrderIds = currentIds;
+    }
+
+    document.getElementById("refreshed").textContent = "Live • " + new Date().toLocaleTimeString();
+    render();
+  } catch (err) {
+    document.getElementById("grid").innerHTML =
+      `<div class="empty">⚠️ Could not load data.<br><small>${esc(err.message)}</small></div>`;
+    document.getElementById("refreshed").textContent = "Connection error";
+  }
+}
+
+/* ─── Stats ─── */
+function renderStats(orders) {
+  const total = orders.length;
+  const pending = orders.filter(o => (o.status || "").toLowerCase() === "pending").length;
+  const revenue = orders.reduce((s, o) => s + (Number(String(o.total).replace(/[^0-9.-]/g, "")) || 0), 0);
+  const units = orders.reduce((s, o) => s + (Number(o.quantity) || 0), 0);
+
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><div class="label">Total Orders</div><div class="value">${total}</div></div>
+    <div class="stat"><div class="label">Pending</div><div class="value">${pending}</div></div>
+    <div class="stat"><div class="label">Total Revenue</div><div class="value">${revenue.toLocaleString()}</div></div>
+    <div class="stat"><div class="label">Items Sold</div><div class="value">${units.toLocaleString()}</div></div>
+  `;
+}
+
+/* ─── Card ─── */
+function renderCard(o) {
+  const sc = statusClass(o.status);
+  const idSafe = esc(o.orderId);
+  return `
+    <div class="card status-${sc}">
+      <div class="card-top">
+        <div class="order-id">${esc(o.orderId || "—")}</div>
+        <span class="badge ${sc}">${esc(o.status || "Unknown")}</span>
+      </div>
+      <div class="row"><span class="icon">👤</span><span class="value">${esc(o.customerName || "—")}</span></div>
+      <div class="row"><span class="icon">📞</span><span class="value">${esc(fmtPhone(o.phone))}</span></div>
+      <div class="row"><span class="icon">📧</span><span class="value">${esc(o.email || "—")}</span></div>
+      <div class="row"><span class="icon">📍</span><span class="value">${esc(o.address || "—")}</span></div>
+      <div class="divider"></div>
+      <div class="row"><span class="icon">🛍️</span><span class="value">${esc(o.productName || "—")} <strong>× ${esc(o.quantity || "0")}</strong></span></div>
+      <div class="divider"></div>
+      <div class="total-line">
+        <span class="label">Total</span>
+        <span class="amount">💰 ${fmtMoney(o.total)}</span>
+      </div>
+      <div class="timestamp">🕐 ${esc(fmtTimestamp(o.timestamp))}</div>
+      <div class="card-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openEdit('${idSafe}')">✏️ Edit</button>
+        <button class="btn btn-success btn-sm" onclick="quickStatus('${idSafe}','Completed')">✅ Complete</button>
+        <button class="btn btn-ghost btn-sm" onclick="quickStatus('${idSafe}','Shipped')">🚚 Ship</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteOrder('${idSafe}')">🗑 Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ─── Render ─── */
+function render() {
+  const q = document.getElementById("search").value.toLowerCase().trim();
+  const sf = document.getElementById("statusFilter").value.toLowerCase();
+  const sort = document.getElementById("sortBy").value;
+
+  let list = ALL_ORDERS.filter(o => {
+    const matchQ = !q || ["orderId","customerName","phone","email","address","productName"]
+      .some(k => (o[k] || "").toLowerCase().includes(q));
+    const matchS = !sf || (o.status || "").toLowerCase() === sf;
+    return matchQ && matchS;
+  });
+
+  list.sort((a, b) => {
+    if (sort === "totalHigh") return (Number(b.total) || 0) - (Number(a.total) || 0);
+    if (sort === "totalLow")  return (Number(a.total) || 0) - (Number(b.total) || 0);
+    const da = toDateObj(a.timestamp) || new Date(0);
+    const db = toDateObj(b.timestamp) || new Date(0);
+    return sort === "oldest" ? da - db : db - da;
+  });
+
+  renderStats(list);
+  const grid = document.getElementById("grid");
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty">🔍 No orders match your filters.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(renderCard).join("");
+}
+
+/* ─── Modal ─── */
+function buildForm(order, isNew) {
+  document.getElementById("formBody").innerHTML = FIELDS.map(f => {
+    const val = order[f.key] ?? "";
+    const cls = f.full ? "form-field full" : "form-field";
+
+    if (f.type === "select") {
+      return `<div class="${cls}">
+        <label>${f.label}</label>
+        <select name="${f.key}">
+          ${f.options.map(o => `<option value="${o}" ${o === val ? "selected" : ""}>${o}</option>`).join("")}
+        </select>
+      </div>`;
+    }
+    if (f.type === "datetime-local") {
+      const dtVal = val ? toLocalDT(val) : nowLocalInput();
+      return `<div class="${cls}">
+        <label>${f.label}</label>
+        <input type="datetime-local" name="${f.key}" value="${dtVal}">
+      </div>`;
+    }
+    const readonly = (isNew && f.readonlyNew) ? "readonly" : "";
+    return `<div class="${cls}">
+      <label>${f.label}</label>
+      <input type="${f.type}" name="${f.key}" value="${esc(val)}" ${readonly}>
+    </div>`;
+  }).join("");
+}
+
+function openAdd() {
+  editingId = null;
+  isNewMode = true;
+  document.getElementById("modalTitle").textContent = "➕ New Order";
+  document.getElementById("saveBtn").textContent = "➕ Add Order";
+  buildForm({ orderId: "ORD" + Date.now(), timestamp: nowLocalInput(), status: "Pending", quantity: 1 }, true);
+  document.getElementById("modal").classList.add("open");
+}
+
+function openEdit(id) {
+  const o = ALL_ORDERS.find(x => x.orderId === id);
+  if (!o) return;
+  editingId = id;
+  isNewMode = false;
+  document.getElementById("modalTitle").textContent = "✏️ Edit Order";
+  document.getElementById("saveBtn").textContent = "💾 Save Changes";
+  buildForm(o, false);
+  document.getElementById("modal").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("open");
+}
+
+/* ─── Submit ─── */
+async function submitForm(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const order = {};
+
+  FIELDS.forEach(f => {
+    let v = fd.get(f.key) ?? "";
+    if (f.type === "datetime-local" && v) {
+      const [datePart, timePart] = v.split("T");
+      const [Y, M, D] = datePart.split("-").map(Number);
+      const [h, m] = timePart.split(":").map(Number);
+      const dt = new Date(Date.UTC(Y, M - 1, D, h, m, 0));
+      dt.setUTCHours(dt.getUTCHours() - TZ_OFFSET_HOURS);
+      const p = n => String(n).padStart(2, "0");
+      v = `${p(dt.getUTCDate())}/${p(dt.getUTCMonth() + 1)}/${dt.getUTCFullYear()} ` +
+          `${p(dt.getUTCHours())}:${p(dt.getUTCMinutes())}:${p(dt.getUTCSeconds())}`;
+    }
+    order[f.key] = v;
+  });
+
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(isNewMode ? { action: "add", order } : { action: "update", orderId: editingId, order })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message);
+    toast(isNewMode ? "Order added ✅" : "Order updated ✅");
+    closeModal();
+    await loadOrders();
+  } catch (err) {
+    toast("Error: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isNewMode ? "➕ Add Order" : "💾 Save Changes";
+  }
+}
+
+/* ─── Quick Actions ─── */
+async function quickStatus(orderId, status) {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "status", orderId, status })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message);
+    toast(`Marked as ${status} ✅`);
+    await loadOrders();
+  } catch (err) {
+    toast("Error: " + err.message, "error");
+  }
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm("Delete order " + orderId + "?")) return;
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "delete", orderId })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message);
+    toast("Order deleted 🗑");
+    await loadOrders();
+  } catch (err) {
+    toast("Error: " + err.message, "error");
+  }
+}
+
+/* ─── Wire Controls ─── */
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("statusFilter").addEventListener("change", render);
+document.getElementById("sortBy").addEventListener("change", render);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+document.getElementById("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
+
+/* ─── Start ─── */
+loadOrders();
+setInterval(loadOrders, REFRESH_MS);
+</script>
+</body>
+</html>
